@@ -1,12 +1,15 @@
 const jwt = require('jsonwebtoken')
 const UserModel = require('../models/userModel')
-const mongoose = require('mongoose')
+const Validator = require('../utilities/validator')
 
 //********************************AUTHENTICATION********************************** */
 
 const authentication = async function(req, res, next){
 
     const bearerToken = req.headers["authorization"]
+    if(!Validator.isValidInputValue(bearerToken)){
+        return res.status(401).send({status : false, message : "token is missing"})
+    }
     const token = bearerToken.split(" ")[1]
    
 
@@ -38,7 +41,7 @@ const authorization = async function(req, res, next){
     const userId = req.params.userId
     const decodedToken = req.decodedToken
 
-    if(!mongoose.Types.ObjectId.isValid(userId)){
+    if(!Validator.isValidObjectId(userId)){
         return res.status(400).send({status :false , message : " enter a valid userId"})
     }
 

@@ -1,14 +1,5 @@
 const mongoose = require("mongoose");
-
-const validEmail = function(email){
-     const regexForEmail = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    return regexForEmail.test(email)
-}
-
-const validPhone = function(phone){
-    const regexForMobile = /^[6-9]\d{9}$/;
-    return regexForMobile.test(phone);
-}
+const Validator = require("../utilities/validator")
 
 
 const userSchema = new mongoose.Schema({
@@ -26,26 +17,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, "User Email is required"],
     unique: [true, "Email address already exist"],
-    validate: [validEmail, "Please enter a valid Email address"],
+    validate: [Validator.isValidEmail, "Please enter a valid Email address"],
     trim: true,
   },
   profileImage: {
     type: String,
-    required: [true, "User profile picture is required"], // s3 link
+    required: [true, "User profile picture is required"], 
     trim: true,
   },
   phone: {
     type: String,
     required: [true, "User phone number is required"],
     unique: [true, "Phone number already exist"],
-    validate: [validPhone, "Please enter a valid phone number"],
+    validate: [Validator.isValidPhone, "Please enter a valid phone number"],
     trim: true,
   },
   password: {
     type: String,
-    required: [true, "password is required"], // encrypted password
-    // minlength: 8,
-    // maxlength: 15,
+    required: [true, "password is required"], 
   },
   address: {
     shipping: {
