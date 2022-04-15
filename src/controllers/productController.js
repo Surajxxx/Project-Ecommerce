@@ -253,7 +253,7 @@ const filterProducts = async function (req, res) {
       }
 
       if (queryParams.hasOwnProperty("priceSort")) {
-        if (!Validator.isValidNumber(priceSort) || ["-1", "1"].includes(priceSort)) {
+        if (!["-1", "1"].includes(priceSort)) {
           return res
             .status(400)
             .send({

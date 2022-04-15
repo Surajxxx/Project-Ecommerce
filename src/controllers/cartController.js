@@ -91,7 +91,7 @@ const createCart = async function (req, res) {
       }
 
       // if user is not matching in cart found by userId and cart found by cart id that mean some other user's cart id is coming from request body
-      if (cartByCartId.userId.toString() !== cartByUserId.userId.toString()) {
+      if (cartId !== cartByUserId.userId.toString()) {
         return res.status(403).send({
           status: false,
           message: `User is not allowed to update this cart`,
@@ -108,13 +108,13 @@ const createCart = async function (req, res) {
 
           /* condition :  cartId and items array element which has product id coming from request body
             update :     totalItems will increase by 1, totalPrice will increase by price of that product 
-                         and items array element(product) quantity will increase by one*/
+            and items array element(product) quantity will increase by one*/
 
         const updateExistingProductQuantity = await CartModel.findOneAndUpdate(
           { _id: cartId, "items.productId": productId },
           {
             $inc: {
-              totalItems: +1,
+              // totalItems: +1,
               totalPrice: +productByProductId.price,
               "items.$.quantity": +1,
             },
@@ -256,14 +256,16 @@ const updateCart = async function (req, res) {
         message: `User is not allowed to update this cart`,
       });
     }
-
-    if (cartByCartId.userId.toString() !== cartByUserId.userId.toString()) {
+    console.log(cartId, cartByUserId._id.toString() )
+    // cart id coming from request body and cart id of the user should be a  match
+    if (cartId !== cartByUserId._id.toString()) {
       return res.status(403).send({
         status: false,
         message: `User is not allowed to update this cart`,
       });
     }
 
+    // removeProduct should be either 1 or 0
     if (![0, 1].includes(removeProduct)) {
       return res.status(400).send({
         status: false,
@@ -272,12 +274,13 @@ const updateCart = async function (req, res) {
       });
     }
 
-    // creating an array of products with quantity and product id in string format
-    const allProductsInCart = cartByCartId.items.map((x) => ({
-      productId: x["productId"].toString(),
-      quantity: x["quantity"],
+    // creating an array of objects with key productId and quantity 
+    const allProductsInCart = cartByCartId.items.map((product) => ({
+      productId: product["productId"].toString(),
+      quantity: product["quantity"],
     }));
 
+    console.log(allProductsInCart.flat())
     // checking product id coming from request body is present in the cart
     const isProductExistsInCart = allProductsInCart.filter(
       (x) => x.productId == productId
@@ -292,17 +295,17 @@ const updateCart = async function (req, res) {
     // identifying quantity of that product
     const productQuantity = isProductExistsInCart[0].quantity;
 
-    // if client want to reduce the quantity by one
+    // if client want to reduce the product quantity by one
     if (removeProduct === 1) {
 
-       // first check whether productQuantity is  greater than one then reduce the quantity else remove whole  product
+       // first check whether productQuantity is  greater than one then reduce the quantity else remove whole product
       if (productQuantity > 1) {
         const decreaseExistingProductQuantity =
           await CartModel.findOneAndUpdate(
             { _id: cartId, "items.productId": productId },
             {
               $inc: {
-                totalItems: -1,
+                // totalItems: -1,
                 totalPrice: -productByProductId.price,
                 "items.$.quantity": -1,
               },
@@ -337,7 +340,7 @@ const updateCart = async function (req, res) {
         {
           $pull: { items: isProductExistsInCart[0] },
           $inc: {
-            totalItems: -productQuantity,
+            totalItems: -1,
             totalPrice: -(productQuantity * productByProductId.price),
           },
         },
