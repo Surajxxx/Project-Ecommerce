@@ -1,9 +1,8 @@
 const CartModel = require("../models/cartModel");
-const UserModel = require("../models/userModel");
 const ProductModel = require("../models/productModel");
 const Validator = require("../utilities/validator");
 
-//*********************************************CREATE or ADD CART***************************************************** */
+//*********************************************CREATE or ADD TO CART***************************************************** */
 
 const createCart = async function (req, res) {
   try {
@@ -91,7 +90,7 @@ const createCart = async function (req, res) {
       }
 
       // if user is not matching in cart found by userId and cart found by cart id that mean some other user's cart id is coming from request body
-      if (cartId !== cartByUserId.userId.toString()) {
+      if (cartId !== cartByUserId._id.toString()) {
         return res.status(403).send({
           status: false,
           message: `User is not allowed to update this cart`,
@@ -100,7 +99,7 @@ const createCart = async function (req, res) {
 
       // applying higher order function "map" on items array of cart to get an array of product id in string
       const isProductExistsInCart = cartByCartId.items.map(
-        (x) => (x["productId"] = x["productId"].toString())
+        (product) => (product["productId"] = product["productId"].toString())
       );
 
       // if product id coming from request body is present in cart then updating its quantity
@@ -114,7 +113,6 @@ const createCart = async function (req, res) {
           { _id: cartId, "items.productId": productId },
           {
             $inc: {
-              // totalItems: +1,
               totalPrice: +productByProductId.price,
               "items.$.quantity": +1,
             },
@@ -123,13 +121,13 @@ const createCart = async function (req, res) {
         );
         return res.status(200).send({
           status: true,
-          message: "Item quantity updated to cart",
+          message: "Product quantity updated to cart",
           data: updateExistingProductQuantity,
         });
       }
 
       // if product id coming from request body is not present in cart then we have to add that product in items array of cart
-      const updateNewProductInItems = await CartModel.findOneAndUpdate(
+      const aAddNewProductInItems = await CartModel.findOneAndUpdate(
         { _id: cartId },
         {
           $addToSet: { items: { productId: productId, quantity: 1 } },
@@ -141,7 +139,7 @@ const createCart = async function (req, res) {
       return res.status(200).send({
         status: true,
         message: "Item updated to cart",
-        data: updateNewProductInItems,
+        data: aAddNewProductInItems,
       });
 
       // if cart ID is not present in request body then first we have to check whether user owns any cart then we create a cart for the product
@@ -156,16 +154,16 @@ const createCart = async function (req, res) {
       }
 
       // if no cart found by userID then creating a new cart the product coming from request body
-      const productData = [
+      const productData = 
         {
           productId: productId,
-          quantity: 1,
-        },
-      ];
+          quantity: 1
+        }
+      
 
       const cartData = {
         userId: userId,
-        items: productData,
+        items: [productData],
         totalPrice: productByProductId.price,
         totalItems: 1,
       };
@@ -174,7 +172,7 @@ const createCart = async function (req, res) {
 
       return res
         .status(200)
-        .send({ status: true, message: "Item added to cart", data: newCart });
+        .send({ status: true, message: "New cart created and product added to cart", data: newCart });
     }
   } catch (error) {
     res.status(500).send({ error: error.message });
@@ -198,7 +196,7 @@ const updateCart = async function (req, res) {
     if (!Validator.isValidInputBody(requestBody)) {
       return res.status(404).send({
         status: false,
-        message: "data is required to add products in cart",
+        message: "data is required to remove products in cart",
       });
     }
 
@@ -256,7 +254,7 @@ const updateCart = async function (req, res) {
         message: `User is not allowed to update this cart`,
       });
     }
-    console.log(cartId, cartByUserId._id.toString() )
+   
     // cart id coming from request body and cart id of the user should be a  match
     if (cartId !== cartByUserId._id.toString()) {
       return res.status(403).send({
@@ -283,7 +281,7 @@ const updateCart = async function (req, res) {
     console.log(allProductsInCart.flat())
     // checking product id coming from request body is present in the cart
     const isProductExistsInCart = allProductsInCart.filter(
-      (x) => x.productId == productId
+      (x) => x.productId === productId
     );
 
     if (isProductExistsInCart.length === 0) {
@@ -305,7 +303,6 @@ const updateCart = async function (req, res) {
             { _id: cartId, "items.productId": productId },
             {
               $inc: {
-                // totalItems: -1,
                 totalPrice: -productByProductId.price,
                 "items.$.quantity": -1,
               },
@@ -315,7 +312,7 @@ const updateCart = async function (req, res) {
 
         return res.status(200).send({
           status: true,
-          message: "Item quantity reduced in cart",
+          message: "product quantity reduced in cart",
           data: decreaseExistingProductQuantity,
         });
       } else {
@@ -330,7 +327,7 @@ const updateCart = async function (req, res) {
 
         return res.status(200).send({
           status: true,
-          message: "Item updated to cart",
+          message: "Product removed from cart",
           data: eraseProductFromCart,
         });
       }
@@ -349,7 +346,7 @@ const updateCart = async function (req, res) {
 
       return res.status(200).send({
         status: true,
-        message: "Item removed from cart",
+        message: "product removed from cart",
         data: removeProductFromCart,
       });
     }

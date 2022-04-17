@@ -295,6 +295,7 @@ Send [form-data](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 - Make sure the user exist
 - Get product(s) details in response body.
 - Check if the productId exists and is not deleted before updating the cart.
+
 - __Response format__
   - _**On success**_ - Return HTTP status 200. Also return the updated cart document. The response should be a JSON object like [this](#successful-response-structure)
   - _**On error**_ - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like [this](#error-response-structure)
@@ -318,7 +319,6 @@ Send [form-data](https://developer.mozilla.org/en-US/docs/Web/API/FormData)
 - __Response format__
   - _**On success**_ - Return HTTP status 204. Return a suitable message. The response should be a JSON object like [this](#successful-response-structure)
   - _**On error**_ - Return a suitable error message with a valid HTTP status code. The response should be a JSON object like [this](#error-response-structure)
-
 
 
 ## FEATURE IV - Order
