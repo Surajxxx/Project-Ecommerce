@@ -57,16 +57,15 @@ const createCart = async function (req, res) {
     // checking whether user has any cart
     const cartByUserId = await CartModel.findOne({ userId: userId });
 
-    if(requestBody.hasOwnProperty("cartId")){
-
+    if (requestBody.hasOwnProperty("cartId")) {
       // if cart Id is coming from requestBody so first validating cart id then updating cart data
-      
-        // cart Id must not be an empty string
-        if (!Validator.isValidInputValue(cartId)) {
-          return res
+
+      // cart Id must not be an empty string
+      if (!Validator.isValidInputValue(cartId)) {
+        return res
           .status(400)
           .send({ status: false, message: "cartId could not be blank" });
-        }
+      }
 
       // cart Id must be a valid mongoose Object Id
       if (!Validator.isValidObjectId(cartId)) {
@@ -83,7 +82,6 @@ const createCart = async function (req, res) {
           .send({ status: false, message: `No cart found by ${cartId}` });
       }
 
-    
       // if user is not matching in cart found by userId and cart found by cart id that mean some other user's cart id is coming from request body
       if (cartId !== cartByUserId._id.toString()) {
         return res.status(403).send({
@@ -91,13 +89,10 @@ const createCart = async function (req, res) {
           message: `User is not allowed to update this cart`,
         });
       }
-
     }
- 
 
     //  if cart is not found by userId that mean some other user's cart Id is coming from request body
     if (cartByUserId) {
-      
       // applying higher order function "map" on items array of cart to get an array of product id in string
       const isProductExistsInCart = cartByUserId.items.map(
         (product) => (product["productId"] = product["productId"].toString())
@@ -105,8 +100,7 @@ const createCart = async function (req, res) {
 
       // if product id coming from request body is present in cart then updating its quantity
       if (isProductExistsInCart.includes(productId)) {
-
-          /* condition :  cartId and items array element which has product id coming from request body
+        /* condition :  cartId and items array element which has product id coming from request body
             update :     totalItems will increase by 1, totalPrice will increase by price of that product 
             and items array element(product) quantity will increase by one*/
 
@@ -129,7 +123,7 @@ const createCart = async function (req, res) {
 
       // if product id coming from request body is not present in cart then we have to add that product in items array of cart
       const aAddNewProductInItems = await CartModel.findOneAndUpdate(
-        { userId : userId  },
+        { userId: userId },
         {
           $addToSet: { items: { productId: productId, quantity: 1 } },
           $inc: { totalItems: +1, totalPrice: +productByProductId.price },
@@ -142,16 +136,12 @@ const createCart = async function (req, res) {
         message: "Item updated to cart",
         data: aAddNewProductInItems,
       });
-
-      
-    }else{
+    } else {
       // if no cart found by userID then creating a new cart the product coming from request body
-      const productData = 
-        {
-          productId: productId,
-          quantity: 1
-        }
-      
+      const productData = {
+        productId: productId,
+        quantity: 1,
+      };
 
       const cartData = {
         userId: userId,
@@ -162,11 +152,13 @@ const createCart = async function (req, res) {
 
       const newCart = await CartModel.create(cartData);
 
-      
-
       return res
         .status(200)
-        .send({ status: true, message: "New cart created and product added to cart", data: newCart });
+        .send({
+          status: true,
+          message: "New cart created and product added to cart",
+          data: newCart,
+        });
     }
   } catch (error) {
     res.status(500).send({ error: error.message });
@@ -248,7 +240,7 @@ const updateCart = async function (req, res) {
         message: `User is not allowed to update this cart`,
       });
     }
-   
+
     // cart id coming from request body and cart id of the user should be a  match
     if (cartId !== cartByUserId._id.toString()) {
       return res.status(403).send({
@@ -266,7 +258,7 @@ const updateCart = async function (req, res) {
       });
     }
 
-    // creating an array of objects with key productId and quantity 
+    // creating an array of objects with key productId and quantity
     const allProductsInCart = cartByCartId.items.map((product) => ({
       productId: product["productId"].toString(),
       quantity: product["quantity"],
@@ -289,8 +281,7 @@ const updateCart = async function (req, res) {
 
     // if client want to reduce the product quantity by one
     if (removeProduct === 1) {
-
-       // first check whether productQuantity is  greater than one then reduce the quantity else remove whole product
+      // first check whether productQuantity is  greater than one then reduce the quantity else remove whole product
       if (productQuantity > 1) {
         const decreaseExistingProductQuantity =
           await CartModel.findOneAndUpdate(
@@ -351,11 +342,11 @@ const updateCart = async function (req, res) {
 
 //***********************************GET CART DETAILS********************************************* */
 
-const getCartDetails = async function(req, res){
-    try{
-        const userId = req.params.userId
-        const queryParams = req.query;
-    
+const getCartDetails = async function (req, res) {
+  try {
+    const userId = req.params.userId;
+    const queryParams = req.query;
+
     if (Validator.isValidInputBody(queryParams)) {
       return res
         .status(404)
@@ -371,21 +362,25 @@ const getCartDetails = async function(req, res){
       });
     }
 
-    return res.status(200).send({status: true, message : "Cart details are here", data : cartByUserId})
-
-
-    }catch(error){
-        res.status(500).send({error : error.message})
-    }
-}
+    return res
+      .status(200)
+      .send({
+        status: true,
+        message: "Cart details are here",
+        data: cartByUserId,
+      });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
 
 //************************************EMPTY CART***************************************************** */
 
-const emptyCart = async function(req, res){
-    try{
-        const userId = req.params.userId
-        const queryParams = req.query;
-    
+const emptyCart = async function (req, res) {
+  try {
+    const userId = req.params.userId;
+    const queryParams = req.query;
+
     if (Validator.isValidInputBody(queryParams)) {
       return res
         .status(404)
@@ -401,7 +396,7 @@ const emptyCart = async function(req, res){
       });
     }
 
-    if(cartByUserId.items.length === 0 || cartByUserId.totalItems === 0){
+    if (cartByUserId.items.length === 0 || cartByUserId.totalItems === 0) {
       return res.status(400).send({
         status: false,
         message: `cart is already empty`,
@@ -409,20 +404,25 @@ const emptyCart = async function(req, res){
     }
 
     const makeCartEmpty = await CartModel.findOneAndUpdate(
-            {userId : userId},
-            {$set : {items : [], totalPrice : 0, totalItems : 0 }},
-            {new : true}
-    )
-    return res.status(200).send({status: true, message : "cart made empty successfully", data : makeCartEmpty})
-
-    }catch(error){
-        res.status(500).send({error : error.message})
-    }
-}
+      { userId: userId },
+      { $set: { items: [], totalPrice: 0, totalItems: 0 } },
+      { new: true }
+    );
+    return res
+      .status(200)
+      .send({
+        status: true,
+        message: "cart made empty successfully",
+        data: makeCartEmpty,
+      });
+  } catch (error) {
+    res.status(500).send({ error: error.message });
+  }
+};
 
 module.exports = {
   createCart,
   updateCart,
   getCartDetails,
-  emptyCart
+  emptyCart,
 };
