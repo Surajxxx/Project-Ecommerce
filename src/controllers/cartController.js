@@ -54,14 +54,19 @@ const createCart = async function (req, res) {
       });
     }
 
-    // if cart Id is coming from requestBody so first validating cart id then updating cart data
-    if (requestBody.hasOwnProperty("cartId")) {
-      // cart Id must not be an empty string
-      if (!Validator.isValidInputValue(cartId)) {
-        return res
+    // checking whether user has any cart
+    const cartByUserId = await CartModel.findOne({ userId: userId });
+
+    if(requestBody.hasOwnProperty("cartId")){
+
+      // if cart Id is coming from requestBody so first validating cart id then updating cart data
+      
+        // cart Id must not be an empty string
+        if (!Validator.isValidInputValue(cartId)) {
+          return res
           .status(400)
           .send({ status: false, message: "cartId could not be blank" });
-      }
+        }
 
       // cart Id must be a valid mongoose Object Id
       if (!Validator.isValidObjectId(cartId)) {
@@ -78,17 +83,7 @@ const createCart = async function (req, res) {
           .send({ status: false, message: `No cart found by ${cartId}` });
       }
 
-      // checking whether user has any cart
-      const cartByUserId = await CartModel.findOne({ userId: userId });
-
-      //  if cart is not found by userId that mean some other user's cart Id is coming from request body
-      if (!cartByUserId) {
-        return res.status(403).send({
-          status: false,
-          message: `User is not allowed to update this cart`,
-        });
-      }
-
+    
       // if user is not matching in cart found by userId and cart found by cart id that mean some other user's cart id is coming from request body
       if (cartId !== cartByUserId._id.toString()) {
         return res.status(403).send({
@@ -97,8 +92,14 @@ const createCart = async function (req, res) {
         });
       }
 
+    }
+ 
+
+    //  if cart is not found by userId that mean some other user's cart Id is coming from request body
+    if (cartByUserId) {
+      
       // applying higher order function "map" on items array of cart to get an array of product id in string
-      const isProductExistsInCart = cartByCartId.items.map(
+      const isProductExistsInCart = cartByUserId.items.map(
         (product) => (product["productId"] = product["productId"].toString())
       );
 
@@ -110,7 +111,7 @@ const createCart = async function (req, res) {
             and items array element(product) quantity will increase by one*/
 
         const updateExistingProductQuantity = await CartModel.findOneAndUpdate(
-          { _id: cartId, "items.productId": productId },
+          { userId: userId, "items.productId": productId },
           {
             $inc: {
               totalPrice: +productByProductId.price,
@@ -128,7 +129,7 @@ const createCart = async function (req, res) {
 
       // if product id coming from request body is not present in cart then we have to add that product in items array of cart
       const aAddNewProductInItems = await CartModel.findOneAndUpdate(
-        { _id: cartId },
+        { userId : userId  },
         {
           $addToSet: { items: { productId: productId, quantity: 1 } },
           $inc: { totalItems: +1, totalPrice: +productByProductId.price },
@@ -142,17 +143,8 @@ const createCart = async function (req, res) {
         data: aAddNewProductInItems,
       });
 
-      // if cart ID is not present in request body then first we have to check whether user owns any cart then we create a cart for the product
-    } else {
-      const cartByUserId = await CartModel.findOne({ userId: userId });
-
-      if (cartByUserId) {
-        return res.status(400).send({
-          status: false,
-          message: `cart already exist, provide cart id`,
-        });
-      }
-
+      
+    }else{
       // if no cart found by userID then creating a new cart the product coming from request body
       const productData = 
         {
@@ -170,6 +162,8 @@ const createCart = async function (req, res) {
 
       const newCart = await CartModel.create(cartData);
 
+      
+
       return res
         .status(200)
         .send({ status: true, message: "New cart created and product added to cart", data: newCart });
@@ -179,7 +173,7 @@ const createCart = async function (req, res) {
   }
 };
 
-//************************************UPDATE CART********************************************************** */
+//****************************************UPDATE CART************************************************** */
 
 const updateCart = async function (req, res) {
   try {
@@ -404,6 +398,13 @@ const emptyCart = async function(req, res){
       return res.status(404).send({
         status: false,
         message: `no cart found by ${userId}`,
+      });
+    }
+
+    if(cartByUserId.items.length === 0 || cartByUserId.totalItems === 0){
+      return res.status(400).send({
+        status: false,
+        message: `cart is already empty`,
       });
     }
 

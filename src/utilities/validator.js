@@ -42,7 +42,7 @@ const isValidAddress = function (value) {
       if (typeof (value) === "string" && value.trim().length > 0 && Number(value) !== NaN) return true
       if (typeof (value) === "number") return true;
       return false;
-    };
+  };
     
     const isValidPincode = function (pincode) {
       const regexForPass = /^[1-9][0-9]{5}$/

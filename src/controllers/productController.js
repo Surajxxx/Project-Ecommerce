@@ -100,14 +100,13 @@ const registerProduct = async function (req, res) {
 
 
     if (isFreeShipping) {
-      if (["true", "false"].includes(isFreeShipping) == false) {
+      if (["true", "false"].includes(isFreeShipping) === false) {
         return res
           .status(400)
           .send({ status: false, message: "isFreeShipping should be boolean" });
       }
     }
 
- 
 
     if (style) {
       if (!Validator.isValidInputValue(style)) {
@@ -128,22 +127,22 @@ const registerProduct = async function (req, res) {
     availableSizes = JSON.parse(availableSizes);
 
     if (!Array.isArray(availableSizes) || availableSizes.length === 0) {
-          return res
-          .status(400)
-          .send({ status: false, message: "enter available sizes in valid format : [X, M, L]" });
+      return res
+        .status(400)
+        .send({ status: false, message: "enter available sizes in valid format : [X, M, L]" });
     }
 
-      for (let i = 0; i < availableSizes.length; i++) {
-        const element = availableSizes[i];
+    for (let i = 0; i < availableSizes.length; i++) {
+      const element = availableSizes[i];
 
-        if (!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(element)) {
-          return res.status(400).send({
-            status: false,
-            message: `available sizes should be from:  [S, XS, M, X, L, XXL, XL]`,
-          });
-        }
+      if (!["S", "XS", "M", "X", "L", "XXL", "XL"].includes(element)) {
+        return res.status(400).send({
+          status: false,
+          message: `available sizes should be from:  [S, XS, M, X, L, XXL, XL]`,
+        });
       }
-   
+    }
+
 
     if (installments) {
       if (!Validator.isValidNumber(installments)) {
@@ -153,7 +152,7 @@ const registerProduct = async function (req, res) {
         });
       }
     }
-    
+
     if (!image || image.length === 0) {
       return res
         .status(400)
@@ -338,7 +337,13 @@ const getProduct = async function (req, res) {
         .send({ status: false, message: "Invalid product id" });
     }
 
-    const productById = await ProductModel.findById(productId);
+    const productById = await ProductModel.findOne({_id: productId, isDeleted : false, deletedAt : null});
+
+    if(!productById){
+      return res
+        .status(404)
+        .send({ status: false, message: "No product found by this Product id" });
+    }
 
     res
       .status(200)
@@ -357,24 +362,24 @@ const updateProductDetails = async function (req, res) {
     const productId = req.params.productId;
     const image = req.files
 
-   
+
     if (Validator.isValidInputBody(queryParams)) {
       return res.status(404).send({ status: false, message: "Page not found" });
     }
 
-     if (!Validator.isValidObjectId(productId)) {
+    if (!Validator.isValidObjectId(productId)) {
       return res
         .status(400)
         .send({ status: false, message: "invalid product id" });
     }
 
-    const productByProductId = await ProductModel.findOne({_id : productId, isDeleted : false, deletedAt : null})
+    const productByProductId = await ProductModel.findOne({ _id: productId, isDeleted: false, deletedAt: null })
 
-    if(!productByProductId){
-      return res.status(404).send({ status: false, message: "No product found by product id"})
+    if (!productByProductId) {
+      return res.status(404).send({ status: false, message: "No product found by product id" })
     }
 
-    if (!Validator.isValidInputBody(requestBody) && image.length == 0) {
+    if (!Validator.isValidInputBody(requestBody) && typeof image === undefined) {
       return res
         .status(400)
         .send({ status: false, message: "Update data required" });
@@ -439,32 +444,32 @@ const updateProductDetails = async function (req, res) {
           .status(400)
           .send({ status: false, message: "Invalid currencyId" });
       }
-       
-      updates["$set"]["currencyId"] = currencyId.trim();
+
+      updates["$set"]["currencyId"] = currencyId.trim().toUpperCase();
       updates["$set"]["currencyFormat"] = getSymbolFromCurrency(currencyId)
     }
 
-  //! Updated currency format according to currency id
+    //! Updated currency format according to currency id
 
     if (requestBody.hasOwnProperty("currencyFormat")) {
-       {
+      {
         return res
           .status(400)
           .send({ status: false, message: "Please update currency Id only, currency formate will be updated accordingly" });
       }
-    }    
+    }
 
 
     if (requestBody.hasOwnProperty("isFreeShipping")) {
-    
-        if (["true", "false"].includes(isFreeShipping) == false) {
-          return res
-            .status(400)
-            .send({ status: false, message: "isFreeShipping should be boolean" });
-        }
-        updates["$set"]["isFreeShipping"] = isFreeShipping;
+
+      if (["true", "false"].includes(isFreeShipping) === false) {
+        return res
+          .status(400)
+          .send({ status: false, message: "isFreeShipping should be boolean" });
+      }
+      updates["$set"]["isFreeShipping"] = isFreeShipping;
     };
-    
+
 
     if (requestBody.hasOwnProperty("style")) {
       if (!Validator.isValidInputValue(style)) {
@@ -482,8 +487,10 @@ const updateProductDetails = async function (req, res) {
           .status(400)
           .send({ status: false, message: "Invalid format of availableSizes" });
       }
-     
+
+      console.log(availableSizes)
       availableSizes = JSON.parse(availableSizes);
+      console.log(availableSizes)
 
       if (Array.isArray(availableSizes) && availableSizes.length > 0) {
         for (let i = 0; i < availableSizes.length; i++) {
@@ -506,7 +513,7 @@ const updateProductDetails = async function (req, res) {
     }
 
     if (requestBody.hasOwnProperty("installments")) {
-      
+
       if (!Validator.isValidNumber(installments)) {
         return res
           .status(400)
@@ -516,14 +523,18 @@ const updateProductDetails = async function (req, res) {
       }
     }
 
-    
-    if(image && image.length > 0){
-      const productImageUrl = await AWS.uploadFile(image[0])      
-    
+    if(typeof (image) !== undefined){
+    if (image && image.length > 0) {
+      const productImageUrl = await AWS.uploadFile(image[0])
+
       updates["$set"]["productImage"] = productImageUrl
     }
+  }
+  console.log(updates)
 
-
+  if(Object.keys(updates["$set"]).length === 0){
+    return res.json("nothing is updated")
+  }
     const updatedProduct = await ProductModel.findOneAndUpdate(
       { _id: productId },
       updates,
@@ -537,7 +548,7 @@ const updateProductDetails = async function (req, res) {
     });
 
 
-    
+
   } catch (error) {
     res.status(500).send({ error: error.message });
   }

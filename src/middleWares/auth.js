@@ -7,11 +7,12 @@ const Validator = require('../utilities/validator')
 const authentication = async function(req, res, next){
 
     const bearerToken = req.headers["authorization"]
+
     if(!Validator.isValidInputValue(bearerToken)){
         return res.status(401).send({status : false, message : "token is missing"})
     }
     const token = bearerToken.split(" ")[1]
-   
+    
 
     const secretKey = '123451214654132466ASDFGwnweruhkwerbjhiHJKL!@#$%^&'
 
@@ -36,6 +37,7 @@ const authentication = async function(req, res, next){
 
 
 }
+//! authorization to be switched to handler
 
 const authorization = async function(req, res, next){
     const userId = req.params.userId

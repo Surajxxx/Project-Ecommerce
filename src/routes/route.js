@@ -4,6 +4,7 @@ const UserController = require('../controllers/userController')
 const Auth = require('../middleWares/auth')
 const ProductController = require('../controllers/productController')
 const CartController = require('../controllers/cartController')
+const OrderController = require('../controllers/orderController')
 
 //test-api
 router.get('/test-me',  function(req, res){
@@ -29,6 +30,10 @@ router.post('/users/:userId/cart', Auth.authentication, Auth.authorization, Cart
 router.put('/users/:userId/cart', Auth.authentication, Auth.authorization, CartController.updateCart )
 router.get('/users/:userId/cart', Auth.authentication, Auth.authorization, CartController.getCartDetails )
 router.delete('/users/:userId/cart', Auth.authentication, Auth.authorization, CartController.emptyCart )
+
+//*************************************ORDER API***************************************************** */
+router.post('/users/:userId/orders', Auth.authentication, Auth.authorization, OrderController.createOrder )
+router.put('/users/:userId/orders', Auth.authentication, Auth.authorization, OrderController.updateOrderStatus )
 
 
 module.exports = router

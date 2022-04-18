@@ -115,8 +115,16 @@ const userRegistration = async function (req, res) {
       });
     }
 
-    if (address) {
+    
+
+      if(!Validator.isValidInputValue(address)){
+        return res
+        .status(400)
+        .send({ status: false, message: "address is required" });
+      }
+
       address = JSON.parse(address);
+
       if (!Validator.isValidAddress(address)) {
         return res
           .status(400)
@@ -201,11 +209,7 @@ const userRegistration = async function (req, res) {
         }
       }
 
-    } else {
-      return res
-        .status(400)
-        .send({ status: false, message: "address is required" });
-    }
+    
 
     if (!image || image.length == 0) {
       return res
@@ -216,7 +220,7 @@ const userRegistration = async function (req, res) {
     const uploadedProfilePictureUrl = await utility.uploadFile(image[0]);
 
     
-    // password encryption
+    //! password encryption
     const salt = await bcrypt.genSalt(10);
     const encryptedPassword = await bcrypt.hash(password, salt);
 
@@ -311,7 +315,7 @@ const userLogin = async function (req, res) {
 
     // creating JWT token
     const payload = { userId: userDetails._id };
-    const expiry = { expiresIn: "1800s" };
+    const expiry = { expiresIn: "1800s" }; 
     const secretKey = "123451214654132466ASDFGwnweruhkwerbjhiHJKL!@#$%^&";
 
     const token = jwt.sign(payload, secretKey, expiry);
@@ -367,29 +371,32 @@ const userProfileUpdate = async function (req, res) {
   try {
     const queryParams = req.query;
 
-    // creating deep copy of request body as [object: null-prototype]
+    // creating shallow copy of request body as [object: null-prototype]
     const requestBody = {...req.body};
     const userId = req.params.userId;
     const image = req.files;
+    console.log(image)
 
     //no data is required from query params
     if (Validator.isValidInputBody(queryParams)) {
       return res.status(404).send({ status: false, message: "Page not found" });
     }
 
-    if (!Validator.isValidInputBody(requestBody) && image.length == 0) {
+    if (!Validator.isValidInputBody(requestBody) && typeof (image) === undefined) {
       return res
         .status(400)
-        .send({ status: false, message: "Update data required" });
+        .send({ status: false, message: "Update related data required" });
     }
 
     // created an empty object. now will add properties that needs to be updated
     const updates = {};
 
+   if(typeof (image) !== undefined) {
     if (image && image.length > 0) {
       const updatedProfileImageUrl = await utility.uploadFile(image[0]);
       updates["profileImage"] = updatedProfileImageUrl;
     }
+  }
 
     // using destructuring then validating keys which are present in request body then adding them to updates object
     let { fname, lname, email, phone, address, password } = requestBody;
@@ -635,6 +642,10 @@ const userProfileUpdate = async function (req, res) {
           updates["address.billing.pincode"] = pincode;
         }
       }
+    }
+
+    if(Object.keys(updates).length === 0){
+      return res.json("nothing to update")
     }
 
     const updatedProfile = await UserModel.findByIdAndUpdate(
