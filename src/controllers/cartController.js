@@ -262,7 +262,7 @@ const updateCart = async function (req, res) {
       return res.status(400).send({
         status: false,
         message:
-          "RemoveProduct is required and its value must be either 0 or 1",
+          "Remove Product is required and its value must be either 0 or 1",
       });
     }
 
@@ -272,7 +272,7 @@ const updateCart = async function (req, res) {
       quantity: product["quantity"],
     }));
 
-    console.log(allProductsInCart.flat())
+    // console.log(allProductsInCart.flat())
     // checking product id coming from request body is present in the cart
     const isProductExistsInCart = allProductsInCart.filter(
       (x) => x.productId === productId

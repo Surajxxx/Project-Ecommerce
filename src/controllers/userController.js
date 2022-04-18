@@ -3,6 +3,7 @@ const utility = require("../utilities/aws");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Validator = require("../utilities/validator");
+const axios = require("axios");
 
 //*********************************************USER REGISTRATION******************************************** */
 
@@ -31,18 +32,18 @@ const userRegistration = async function (req, res) {
     if (!Validator.isValidInputValue(fname)) {
       return res
         .status(400)
-        .send({ status: false, message: "First name is required like : Suraj." });
-    }
-
-    if (!Validator.isValidOnlyCharacters(fname)) {
-      return res
-        .status(400)
         .send({
           status: false,
-          message: "Only alphabets allowed in first name",
+          message: "First name is required like : Suraj.",
         });
     }
 
+    if (!Validator.isValidOnlyCharacters(fname)) {
+      return res.status(400).send({
+        status: false,
+        message: "Only alphabets allowed in first name",
+      });
+    }
 
     if (!Validator.isValidInputValue(lname)) {
       return res
@@ -51,12 +52,10 @@ const userRegistration = async function (req, res) {
     }
 
     if (!Validator.isValidOnlyCharacters(lname)) {
-      return res
-        .status(400)
-        .send({
-          status: false,
-          message: "Only alphabets allowed in last name",
-        });
+      return res.status(400).send({
+        status: false,
+        message: "Only alphabets allowed in last name",
+      });
     }
 
     if (!Validator.isValidInputValue(email)) {
@@ -115,101 +114,145 @@ const userRegistration = async function (req, res) {
       });
     }
 
-    
-
-      if(!Validator.isValidInputValue(address)){
-        return res
+    if (!Validator.isValidInputValue(address)) {
+      return res
         .status(400)
         .send({ status: false, message: "address is required" });
+    }
+
+    address = JSON.parse(address);
+
+    if (!Validator.isValidAddress(address)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Invalid address" });
+    }
+
+    const { shipping, billing } = address;
+
+    if (!Validator.isValidAddress(shipping)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Shipping address is required" });
+    } else {
+      let { street, city, pincode } = shipping;
+
+      if (!Validator.isValidInputValue(street)) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: street name is required ",
+        });
       }
 
-      address = JSON.parse(address);
-
-      if (!Validator.isValidAddress(address)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "Invalid address" });
+      if (!Validator.isValidInputValue(city)) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: city name is required ",
+        });
       }
 
-      const { shipping, billing } = address;
-
-      if (!Validator.isValidAddress(shipping)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "Shipping address is required" });
-      } else {
-        const { street, city, pincode } = shipping;
-
-        if (!Validator.isValidInputValue(street)) {
-          return res.status(400).send({
-            status: false,
-            message: "Shipping address: street name is required ",
-          });
-        }
-
-        if (!Validator.isValidInputValue(city)) {
-          return res.status(400).send({
-            status: false,
-            message: "Shipping address: city name is required ",
-          });
-        }
-
-        if (!Validator.isValidOnlyCharacters(city)) {
-          return res
-            .status(400)
-            .send({
-              status: false,
-              message: "Shipping address: only alphabets allowed in city",
-            });
-        }
-
-        if (!Validator.isValidPincode(pincode)) {
-          return res.status(400).send({
-            status: false,
-            message: "Shipping address: pin code should be valid like: 335659 ",
-          });
-        }
+      if (!Validator.isValidOnlyCharacters(city)) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: only alphabets allowed in city",
+        });
       }
 
-      if (!Validator.isValidAddress(billing)) {
-        return res
-          .status(400)
-          .send({ status: false, message: "Billing address is required" });
-      } else {
-        const { street, city, pincode } = billing;
-
-        if (!Validator.isValidInputValue(street)) {
-          return res.status(400).send({
-            status: false,
-            message: "Billing address: street name is required ",
-          });
-        }
-
-        if (!Validator.isValidInputValue(city)) {
-          return res.status(400).send({
-            status: false,
-            message: "Billing address: city name is required ",
-          });
-        }
-
-        if (!Validator.isValidOnlyCharacters(city)) {
-          return res
-            .status(400)
-            .send({
-              status: false,
-              message: "Billing address: Only alphabets allowed in city",
-            });
-        }
-
-        if (!Validator.isValidPincode(pincode)) {
-          return res.status(400).send({ 
-            status: false,
-            message: "Billing address: pin code should be valid like: 335659 ",
-          });
-        }
+      if (!Validator.isValidPincode(pincode)) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: pin code should be valid like: 335659 ",
+        });
       }
 
-    
+      //Matching pincode and city by axios call
+
+      const options = {
+        method: "GET",
+        url: `https://api.postalpincode.in/pincode/${pincode}`,
+      };
+
+      const pincodeDetail = await axios(options);
+
+      if (pincodeDetail.data[0].PostOffice === null) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: pin code should be valid like: 335659 ",
+        });
+      }
+      const cityNameByPinCode = pincodeDetail.data[0].PostOffice[0].District;
+
+      if (cityNameByPinCode.toLowerCase() !== city.toLowerCase()) {
+        return res.status(400).send({
+          status: false,
+          message: "Shipping address: pin code is not matching with city ",
+        });
+      }
+
+      address.shipping.city = cityNameByPinCode;
+    }
+
+    if (!Validator.isValidAddress(billing)) {
+      return res
+        .status(400)
+        .send({ status: false, message: "Billing address is required" });
+    } else {
+      let { street, city, pincode } = billing;
+
+      if (!Validator.isValidInputValue(street)) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: street name is required ",
+        });
+      }
+
+      if (!Validator.isValidInputValue(city)) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: city name is required ",
+        });
+      }
+
+      if (!Validator.isValidOnlyCharacters(city)) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: Only alphabets allowed in city",
+        });
+      }
+
+      if (!Validator.isValidPincode(pincode)) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: pin code should be valid like: 335659 ",
+        });
+      }
+
+      //Matching pincode and city by axios call
+
+      const options = {
+        method: "GET",
+        url: `https://api.postalpincode.in/pincode/${pincode}`,
+      };
+
+      const pincodeDetail = await axios(options);
+
+      if (pincodeDetail.data[0].PostOffice === null) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: pin code should be valid like: 335659 ",
+        });
+      }
+      const cityNameByPinCode = pincodeDetail.data[0].PostOffice[0].District;
+
+      if (cityNameByPinCode.toLowerCase() !== city.toLowerCase()) {
+        return res.status(400).send({
+          status: false,
+          message: "Billing address: pin code is not matching with city ",
+        });
+      }
+
+      address.billing.city = cityNameByPinCode;
+    }
 
     if (!image || image.length == 0) {
       return res
@@ -219,7 +262,6 @@ const userRegistration = async function (req, res) {
 
     const uploadedProfilePictureUrl = await utility.uploadFile(image[0]);
 
-    
     //! password encryption
     const salt = await bcrypt.genSalt(10);
     const encryptedPassword = await bcrypt.hash(password, salt);
@@ -315,7 +357,7 @@ const userLogin = async function (req, res) {
 
     // creating JWT token
     const payload = { userId: userDetails._id };
-    const expiry = { expiresIn: "1800s" }; 
+    const expiry = { expiresIn: "1800s" };
     const secretKey = "123451214654132466ASDFGwnweruhkwerbjhiHJKL!@#$%^&";
 
     const token = jwt.sign(payload, secretKey, expiry);
@@ -341,6 +383,30 @@ const profileDetails = async function (req, res) {
     const requestBody = req.body;
     const userId = req.params.userId;
 
+    //Authorization
+
+    const decodedToken = req.decodedToken;
+
+    if (!Validator.isValidObjectId(userId)) {
+      return res
+        .status(400)
+        .send({ status: false, message: " enter a valid userId" });
+    }
+
+    const userDetailByUserId = await UserModel.findById(userId);
+
+    if (!userDetailByUserId) {
+      return res
+        .status(404)
+        .send({ status: false, message: " user not found" });
+    }
+
+    if (userId !== decodedToken.userId) {
+      return res
+        .status(403)
+        .send({ status: false, message: "unauthorized access" });
+    }
+
     //no data is required from query params
     if (Validator.isValidInputBody(queryParams)) {
       return res.status(404).send({ status: false, message: "Page not found" });
@@ -353,12 +419,10 @@ const profileDetails = async function (req, res) {
       });
     }
 
-    const userProfile = await UserModel.findById(userId);
-
     res.status(200).send({
       status: true,
       message: "user profile details",
-      data: userProfile,
+      data: userDetailByUserId,
     });
   } catch (error) {
     res.status(500).send({ error: error.message });
@@ -372,17 +436,43 @@ const userProfileUpdate = async function (req, res) {
     const queryParams = req.query;
 
     // creating shallow copy of request body as [object: null-prototype]
-    const requestBody = {...req.body};
+    const requestBody = { ...req.body };
     const userId = req.params.userId;
     const image = req.files;
-    console.log(image)
+
+    //Authorization
+
+    const decodedToken = req.decodedToken;
+
+    if (!Validator.isValidObjectId(userId)) {
+      return res
+        .status(400)
+        .send({ status: false, message: " enter a valid userId" });
+    }
+
+    const userDetailByUserId = await UserModel.findById(userId);
+
+    if (!userDetailByUserId) {
+      return res
+        .status(404)
+        .send({ status: false, message: " user not found" });
+    }
+
+    if (userId !== decodedToken.userId) {
+      return res
+        .status(403)
+        .send({ status: false, message: "unauthorized access" });
+    }
 
     //no data is required from query params
     if (Validator.isValidInputBody(queryParams)) {
       return res.status(404).send({ status: false, message: "Page not found" });
     }
 
-    if (!Validator.isValidInputBody(requestBody) && typeof (image) === undefined) {
+    if (
+      !Validator.isValidInputBody(requestBody) &&
+      typeof image === undefined
+    ) {
       return res
         .status(400)
         .send({ status: false, message: "Update related data required" });
@@ -391,12 +481,12 @@ const userProfileUpdate = async function (req, res) {
     // created an empty object. now will add properties that needs to be updated
     const updates = {};
 
-   if(typeof (image) !== undefined) {
-    if (image && image.length > 0) {
-      const updatedProfileImageUrl = await utility.uploadFile(image[0]);
-      updates["profileImage"] = updatedProfileImageUrl;
+    if (typeof image !== undefined) {
+      if (image && image.length > 0) {
+        const updatedProfileImageUrl = await utility.uploadFile(image[0]);
+        updates["profileImage"] = updatedProfileImageUrl;
+      }
     }
-  }
 
     // using destructuring then validating keys which are present in request body then adding them to updates object
     let { fname, lname, email, phone, address, password } = requestBody;
@@ -460,12 +550,10 @@ const userProfileUpdate = async function (req, res) {
 
     if (requestBody.hasOwnProperty("phone")) {
       if (!Validator.isValidInputValue(phone)) {
-        return res
-          .status(400)
-          .send({
-            status: false,
-            message: "phone number should be in valid format",
-          });
+        return res.status(400).send({
+          status: false,
+          message: "phone number should be in valid format",
+        });
       }
 
       if (!Validator.isValidPhone(phone)) {
@@ -486,12 +574,10 @@ const userProfileUpdate = async function (req, res) {
 
     if (requestBody.hasOwnProperty("password")) {
       if (!Validator.isValidInputValue(password)) {
-        return res
-          .status(400)
-          .send({
-            status: false,
-            message: "password should be in valid format",
-          });
+        return res.status(400).send({
+          status: false,
+          message: "password should be in valid format",
+        });
       }
 
       if (!Validator.isValidPassword(password)) {
@@ -502,11 +588,9 @@ const userProfileUpdate = async function (req, res) {
         });
       }
 
-      const userDetails = await UserModel.findById(userId);
-
       const isOldPassword = await bcrypt.compare(
         password,
-        userDetails.password
+        userDetailByUserId.password
       );
 
       if (isOldPassword) {
@@ -539,57 +623,69 @@ const userProfileUpdate = async function (req, res) {
 
       const { shipping, billing } = address;
 
-      if (address.hasOwnProperty("shipping")) {
-        if (!Validator.isValidAddress(shipping)) {
-          return res.status(400).send({
-            status: false,
-            message: "Shipping address should be in valid format ",
-          });
-        }
+        if (address.hasOwnProperty("shipping")) {
+          if (!Validator.isValidAddress(shipping)) {
+            return res.status(400).send({
+              status: false,
+              message: "Shipping address should be in valid format ",
+            });
+          }
 
-        const { street, city, pincode } = shipping;
+          const { street, city, pincode } = shipping;
 
-        if (shipping.hasOwnProperty("street")) {
-          if (!Validator.isValidInputValue(street)) {
+          if (shipping.hasOwnProperty("street")) {
+            if (!Validator.isValidInputValue(street)) {
+              return res.status(400).send({
+                status: false,
+                message:
+                  "shipping address: street name should be in valid format ",
+              });
+            }
+            updates["address.shipping.street"] = street.trim();
+          }
+
+          if (shipping.hasOwnProperty("city")) {
             return res.status(400).send({
               status: false,
               message:
-                "shipping address: street name should be in valid format ",
+                "Shipping address: Please provide pin code only, city name will be updated by pincode. ",
             });
           }
-          updates["address.shipping.street"] = street.trim();
-        }
-
-        if (shipping.hasOwnProperty("city")) {
-          if (!Validator.isValidInputValue(city)) {
-            return res.status(400).send({
-              status: false,
-              message: "shipping address: city name should be in valid format ",
-            });
-          }
-
-          if (!Validator.isValidOnlyCharacters(city)) {
-            return res.status(400).send({
-              status: false,
-              message:
-                "shipping address: only alphabets are allowed in city name ",
-            });
-          }
-
-          updates["address.shipping.city"] = city.trim();
-        }
+        
 
         if (shipping.hasOwnProperty("pincode")) {
           if (!Validator.isValidPincode(pincode)) {
             return res.status(400).send({
               status: false,
-              message:
-                "Shipping address: pin code should be valid like: 335659 ",
+              message: "Shipping address: pin code should be valid like: 335659 ",
             });
           }
+
+          //Matching pincode and city by axios call
+
+          const options = {
+            method: "GET",
+            url: `https://api.postalpincode.in/pincode/${pincode}`,
+          };
+
+          const pincodeDetail = await axios(options);
+
+          if (pincodeDetail.data[0].PostOffice === null) {
+            return res.status(400).send({
+              status: false,
+              message: "Billing address: pin code should be valid like: 335659 ",
+            });
+          }
+
+          const cityNameByPinCode = pincodeDetail.data[0].PostOffice[0].District;
+
           updates["address.shipping.pincode"] = pincode;
+          updates["address.shipping.city"] = cityNameByPinCode;
         }
       }
+
+
+
 
       if (address.hasOwnProperty("billing")) {
         if (!Validator.isValidAddress(billing)) {
@@ -606,29 +702,18 @@ const userProfileUpdate = async function (req, res) {
             return res.status(400).send({
               status: false,
               message:
-                "billing address: street name should be in valid format ",
+                "Billing address: street name should be in valid format ",
             });
           }
           updates["address.billing.street"] = street.trim();
         }
 
         if (billing.hasOwnProperty("city")) {
-          if (!Validator.isValidInputValue(city)) {
-            return res.status(400).send({
-              status: false,
-              message: "billing address: city name should be in valid format ",
-            });
-          }
-
-          if (!Validator.isValidOnlyCharacters(city)) {
-            return res.status(400).send({
-              status: false,
-              message:
-                "billing address: only alphabets are allowed in city name ",
-            });
-          }
-
-          updates["address.billing.city"] = city.trim();
+          return res.status(400).send({
+            status: false,
+            message:
+              "Billing address: Please provide pin code only, city name will be updated by pincode. ",
+          });
         }
 
         if (billing.hasOwnProperty("pincode")) {
@@ -636,16 +721,38 @@ const userProfileUpdate = async function (req, res) {
             return res.status(400).send({
               status: false,
               message:
-                "billing address: pin code should be valid like: 335659 ",
+                "Billing address: pin code should be valid like: 335659 ",
             });
           }
+
+          //Matching pincode and city by axios call
+
+          const options = {
+            method: "GET",
+            url: `https://api.postalpincode.in/pincode/${pincode}`,
+          };
+
+          const pincodeDetail = await axios(options);
+
+          if (pincodeDetail.data[0].PostOffice === null) {
+            return res.status(400).send({
+              status: false,
+              message:
+                "Billing address: pin code should be valid like: 335659 ",
+            });
+          }
+
+          const cityNameByPinCode =
+            pincodeDetail.data[0].PostOffice[0].District;
+
           updates["address.billing.pincode"] = pincode;
+          updates["address.billing.city"] = cityNameByPinCode;
         }
       }
     }
 
-    if(Object.keys(updates).length === 0){
-      return res.json("nothing to update")
+    if (Object.keys(updates).length === 0) {
+      return res.json("nothing to update");
     }
 
     const updatedProfile = await UserModel.findByIdAndUpdate(
