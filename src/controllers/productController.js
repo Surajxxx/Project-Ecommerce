@@ -164,7 +164,7 @@ const registerProduct = async function(req, res) {
         const productData = {
             title: title.trim(),
             description: description.trim(),
-            price: price,
+            price: Number(price),
             currencyId: currencyId.trim(),
             currencyFormat: currencyFormat.trim(),
             isFreeShipping: isFreeShipping ? isFreeShipping : false,
@@ -188,7 +188,7 @@ const registerProduct = async function(req, res) {
     }
 };
 
-//*****************************************GET ALL & FILTERED PRODUCTS LIST*********************************************** */
+//*****************************************GET ALL & FILTERED PRODUCTS LIST************************************* */
 
 const filterProducts = async function(req, res) {
     try {
@@ -353,7 +353,7 @@ const getProduct = async function(req, res) {
     }
 };
 
-//*************************************UPDATE A PRODUCT DETAILS***************************************************** */
+//*************************************UPDATE A PRODUCT DETAILS********************************************** */
 
 const updateProductDetails = async function(req, res) {
     try {
@@ -449,7 +449,6 @@ const updateProductDetails = async function(req, res) {
             updates["$set"]["currencyFormat"] = getSymbolFromCurrency(currencyId)
         }
 
-        //! Updated currency format according to currency id
 
         if (requestBody.hasOwnProperty("currencyFormat")) {
             {
@@ -517,9 +516,9 @@ const updateProductDetails = async function(req, res) {
                 return res
                     .status(400)
                     .send({ status: false, message: "invalid installments" });
-            } else {
-                updates["$set"]["installments"] = Number(installments);
             }
+            updates["$set"]["installments"] = Number(installments);
+
         }
 
         if (typeof(image) !== undefined) {
@@ -534,6 +533,7 @@ const updateProductDetails = async function(req, res) {
         if (Object.keys(updates["$set"]).length === 0) {
             return res.json("nothing is updated")
         }
+
         const updatedProduct = await ProductModel.findOneAndUpdate({ _id: productId },
             updates, { new: true }
         );

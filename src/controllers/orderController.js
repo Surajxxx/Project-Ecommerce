@@ -21,9 +21,9 @@ const createOrder = async function(req, res) {
             return res.status(400).send({ status: false, message: "Cart data is required " })
         }
 
-        const { userId, items, totalPrice, totalItems } = requestBody
+        let { userId, items, totalPrice, totalItems, totalQuantity, cancellable } = requestBody
 
-        if (Object.keys(requestBody).length > 4) {
+        if (Object.keys(requestBody).length > 6) {
             return res.status(400).send({ status: false, message: "invalid entries" })
         }
 
@@ -51,14 +51,21 @@ const createOrder = async function(req, res) {
             return res.status(400).send({ status: false, message: "total items should be a non zero number" })
         }
 
-        let totalQuantity = 0
-
-        for (let i = 0; i < items.length; i++) {
-            const element = items[i];
-
-            totalQuantity = totalQuantity + element.quantity
-
+        if (typeof(totalQuantity) !== 'number' || totalQuantity === 0) {
+            return res.status(400).send({ status: false, message: "total quantity should be a non zero number" })
         }
+
+        if (requestBody.hasOwnProperty("cancellable")) {
+            if (typeof(cancellable) !== 'boolean') {
+                return res.status(400).send({ status: false, message: "cancellable should be a boolean" })
+            }
+            cancellable = cancellable
+
+        } else {
+            cancellable = true
+        }
+
+
 
         const orderData = {
             userId: userId,
@@ -66,7 +73,7 @@ const createOrder = async function(req, res) {
             totalItems: totalItems,
             totalPrice: totalPrice,
             totalQuantity: totalQuantity,
-            cancellable: true,
+            cancellable: cancellable,
             status: "pending",
             isDeleted: false,
             deletedAt: null
@@ -119,7 +126,7 @@ const updateOrderStatus = async function(req, res) {
         const orderDetailsByOrderId = await OrderModel.findOne({ _id: orderId, isDeleted: false, deletedAt: null })
 
         if (!orderDetailsByOrderId) {
-            return res.status(400).send({ status: false, message: `no order found by ${orderId} ` })
+            return res.status(404).send({ status: false, message: `no order found by ${orderId} ` })
         }
 
         if (orderDetailsByOrderId.userId.toString() !== userIdFromParams) {
@@ -136,6 +143,10 @@ const updateOrderStatus = async function(req, res) {
 
         if (status === "cancelled" && orderDetailsByOrderId.cancellable === false) {
             return res.status(400).send({ status: false, message: "This order can not be cancelled" })
+        }
+
+        if (status === "pending") {
+            return res.status(400).send({ status: false, message: "order status is already pending" })
         }
 
         const updateStatus = await OrderModel.findOneAndUpdate({ _id: orderId }, { $set: { status: status } }, { new: true })
