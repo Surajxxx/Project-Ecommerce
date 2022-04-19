@@ -2,6 +2,7 @@ const ProductModel = require("../models/productModel");
 const AWS = require("../utilities/aws");
 const Validator = require('../utilities/validator')
 const getSymbolFromCurrency = require("currency-symbol-map");
+const { Convert } = require('easy-currencies')
 
 
 //********************************REGISTERING NEW PRODUCT****************************************** */
@@ -11,7 +12,7 @@ const registerProduct = async function(req, res) {
         const requestBody = {...req.body };
         const queryParams = req.query;
         const image = req.files;
-
+        console.log(image)
 
         //no data is required from query params
         if (Validator.isValidInputBody(queryParams)) {
@@ -150,6 +151,12 @@ const registerProduct = async function(req, res) {
                 .send({ status: false, message: "product image is required" });
         }
 
+        if (!Validator.isValidImageType(image[0].mimetype)) {
+            return res
+                .status(400)
+                .send({ status: false, message: "Only images can be uploaded (jpeg/jpg/png)" });
+        }
+
         const productImageUrl = await AWS.uploadFile(image[0]);
 
         const productData = {
@@ -267,9 +274,7 @@ const filterProducts = async function(req, res) {
                 filterConditions["title"] = { $regex: regexForName };
             }
 
-            const filteredProducts = await ProductModel.find(filterConditions).sort(
-                sorting
-            );
+            const filteredProducts = await ProductModel.find(filterConditions).sort(sorting)
 
             if (filteredProducts.length == 0) {
                 return res
@@ -277,12 +282,14 @@ const filterProducts = async function(req, res) {
                     .send({ status: false, message: "no product found" });
             }
 
-            res.status(200).send({
+            return res.status(200).send({
                 status: true,
                 message: "Filtered product list is here",
                 productCount: filteredProducts.length,
                 data: filteredProducts,
             });
+
+
         } else {
             const allProducts = await ProductModel.find(filterConditions);
 
@@ -514,8 +521,13 @@ const updateProductDetails = async function(req, res) {
 
         if (typeof(image) !== undefined) {
             if (image && image.length > 0) {
-                const productImageUrl = await AWS.uploadFile(image[0])
+                if (!Validator.isValidImageType(image[0].mimetype)) {
+                    return res
+                        .status(400)
+                        .send({ status: false, message: "Only images can be uploaded (jpeg/jpg/png)" });
+                }
 
+                const productImageUrl = await AWS.uploadFile(image[0])
                 updates["$set"]["productImage"] = productImageUrl
             }
         }
@@ -597,17 +609,3 @@ module.exports = {
     updateProductDetails,
     deleteProduct,
 };
-
-
-
-const items = [{ productId: 1, quantity: 5 }, { productId: 1, quantity: 7 }, { productId: 1, quantity: 2 }, { productId: 1, quantity: 1 }]
-
-//lets calculate total quantity of this items array
-let TOTALQUANTITY = 0
-for (let i = 0; i < items.length; i++) {
-    const element = items[i];
-
-    TOTALQUANTITY = TOTALQUANTITY + element.quantity
-
-}
-console.log(TOTALQUANTITY)

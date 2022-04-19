@@ -257,9 +257,15 @@ const userRegistration = async function(req, res) {
                 .send({ status: false, message: "no profile image found" });
         }
 
+        if (!Validator.isValidImageType(image[0].mimetype)) {
+            return res
+                .status(400)
+                .send({ status: false, message: "Only images can be uploaded (jpeg/jpg/png)" });
+        }
+
         const uploadedProfilePictureUrl = await utility.uploadFile(image[0]);
 
-        //! password encryption
+        // password encryption
         const salt = await bcrypt.genSalt(10);
         const encryptedPassword = await bcrypt.hash(password, salt);
 
@@ -478,6 +484,12 @@ const userProfileUpdate = async function(req, res) {
 
         if (typeof image !== undefined) {
             if (image && image.length > 0) {
+
+                if (!Validator.isValidImageType(image[0].mimetype)) {
+                    return res
+                        .status(400)
+                        .send({ status: false, message: "Only images can be uploaded (jpeg/jpg/png)" });
+                }
                 const updatedProfileImageUrl = await utility.uploadFile(image[0]);
                 updates["profileImage"] = updatedProfileImageUrl;
             }
