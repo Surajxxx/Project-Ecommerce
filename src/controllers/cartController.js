@@ -1,6 +1,7 @@
 const CartModel = require("../models/cartModel");
 const ProductModel = require("../models/productModel");
 const Validator = require("../utilities/validator");
+const { Convert } = require('easy-currencies')
 
 //*********************************************CREATE or ADD TO CART***************************************************** */
 
@@ -46,13 +47,8 @@ const createCart = async function(req, res) {
                 .send({ status: false, message: `No product found by ${productId}` });
         }
 
-        // if product is out of stock
-        if (productByProductId.installments === 0) {
-            return res.status(400).send({
-                status: false,
-                message: `${productId} is out of stock currently`,
-            });
-        }
+        // converting product price to INR
+        const productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
 
         // checking whether user has any cart
         const cartByUserId = await CartModel.findOne({ userId: userId });
@@ -106,7 +102,7 @@ const createCart = async function(req, res) {
 
                 const updateExistingProductQuantity = await CartModel.findOneAndUpdate({ userId: userId, "items.productId": productId }, {
                     $inc: {
-                        totalPrice: +productByProductId.price,
+                        totalPrice: +productPriceInRupees,
                         "items.$.quantity": +1,
                     },
                 }, { new: true });
@@ -120,7 +116,7 @@ const createCart = async function(req, res) {
             // if product id coming from request body is not present in cart then we have to add that product in items array of cart
             const aAddNewProductInItems = await CartModel.findOneAndUpdate({ userId: userId }, {
                 $addToSet: { items: { productId: productId, quantity: 1 } },
-                $inc: { totalItems: +1, totalPrice: +productByProductId.price },
+                $inc: { totalItems: +1, totalPrice: +productPriceInRupees },
             }, { new: true });
 
             return res.status(200).send({
@@ -138,7 +134,7 @@ const createCart = async function(req, res) {
             const cartData = {
                 userId: userId,
                 items: [productData],
-                totalPrice: productByProductId.price,
+                totalPrice: productPriceInRupees,
                 totalItems: 1,
             };
 
@@ -203,6 +199,9 @@ const updateCart = async function(req, res) {
                 .status(404)
                 .send({ status: false, message: `No product found by ${productId}` });
         }
+
+        // converting product price to INR
+        const productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
 
         if (!Validator.isValidInputValue(cartId)) {
             return res
@@ -277,7 +276,7 @@ const updateCart = async function(req, res) {
                 const decreaseExistingProductQuantity =
                     await CartModel.findOneAndUpdate({ _id: cartId, "items.productId": productId }, {
                         $inc: {
-                            totalPrice: -productByProductId.price,
+                            totalPrice: -productPriceInRupees,
                             "items.$.quantity": -1,
                         },
                     }, { new: true });
@@ -290,7 +289,7 @@ const updateCart = async function(req, res) {
             } else {
                 const eraseProductFromCart = await CartModel.findOneAndUpdate({ _id: cartId }, {
                     $pull: { items: isProductExistsInCart[0] },
-                    $inc: { totalItems: -1, totalPrice: -productByProductId.price },
+                    $inc: { totalItems: -1, totalPrice: -productPriceInRupees },
                 }, { new: true });
 
                 return res.status(200).send({
@@ -304,7 +303,7 @@ const updateCart = async function(req, res) {
                 $pull: { items: isProductExistsInCart[0] },
                 $inc: {
                     totalItems: -1,
-                    totalPrice: -(productQuantity * productByProductId.price),
+                    totalPrice: -(productQuantity * productPriceInRupees),
                 },
             }, { new: true });
 

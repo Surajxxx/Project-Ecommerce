@@ -83,19 +83,10 @@ const registerProduct = async function(req, res) {
                 .send({ status: false, message: "currencyId  is not  valid" });
         }
 
-        if (!Validator.isValidInputValue(currencyFormat)) {
+        if (Validator.isValidInputValue(currencyFormat)) {
             return res
                 .status(400)
-                .send({ status: false, message: "currencyFormat is required" });
-        }
-
-        if (getSymbolFromCurrency(currencyId) !== currencyFormat) {
-            return res
-                .status(400)
-                .send({
-                    status: false,
-                    message: "currencyFormat is not matching with currencyId",
-                });
+                .send({ status: false, message: "currency Format will be updated according to currency ID " });
         }
 
 
@@ -166,7 +157,7 @@ const registerProduct = async function(req, res) {
             description: description.trim(),
             price: Number(price),
             currencyId: currencyId.trim(),
-            currencyFormat: currencyFormat.trim(),
+            currencyFormat: getSymbolFromCurrency(currencyId),
             isFreeShipping: isFreeShipping ? isFreeShipping : false,
             productImage: productImageUrl,
             style: style,
@@ -451,11 +442,11 @@ const updateProductDetails = async function(req, res) {
 
 
         if (requestBody.hasOwnProperty("currencyFormat")) {
-            {
-                return res
-                    .status(400)
-                    .send({ status: false, message: "Please update currency Id only, currency formate will be updated accordingly" });
-            }
+
+            return res
+                .status(400)
+                .send({ status: false, message: "Please update currency Id only, currency format will be updated accordingly" });
+
         }
 
 
