@@ -382,7 +382,7 @@ const updateProductDetails = async function(req, res) {
         if (!Validator.isValidInputBody(requestBody) && typeof image === undefined) {
             return res
                 .status(400)
-                .send({ status: false, message: "Update data required" });
+                .send({ status: false, message: "Update related product data required" });
         }
 
 

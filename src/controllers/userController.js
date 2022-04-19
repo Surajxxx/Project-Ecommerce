@@ -664,7 +664,7 @@ const userProfileUpdate = async function(req, res) {
                     if (pincodeDetail.data[0].PostOffice === null) {
                         return res.status(400).send({
                             status: false,
-                            message: "Billing address: pin code should be valid like: 335659 ",
+                            message: "Shipping address: pin code should be valid like: 335659 ",
                         });
                     }
 
