@@ -47,9 +47,12 @@ const createCart = async function(req, res) {
                 .send({ status: false, message: `No product found by ${productId}` });
         }
 
-        // converting product price to INR
-        const productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
+        let productPriceInRupees = productByProductId.price
 
+        if (productByProductId.currencyId !== "INR") {
+            // converting product price to INR
+            productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
+        }
         // checking whether user has any cart
         const cartByUserId = await CartModel.findOne({ userId: userId });
 
@@ -200,8 +203,12 @@ const updateCart = async function(req, res) {
                 .send({ status: false, message: `No product found by ${productId}` });
         }
 
-        // converting product price to INR
-        const productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
+        let productPriceInRupees = productByProductId.price
+
+        if (productByProductId.currencyId !== "INR") {
+            // converting product price to INR
+            productPriceInRupees = await Convert(productByProductId.price).from(productByProductId.currencyId).to("INR")
+        }
 
         if (!Validator.isValidInputValue(cartId)) {
             return res

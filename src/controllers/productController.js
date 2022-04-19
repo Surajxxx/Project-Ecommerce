@@ -597,3 +597,17 @@ module.exports = {
     updateProductDetails,
     deleteProduct,
 };
+
+
+
+const items = [{ productId: 1, quantity: 5 }, { productId: 1, quantity: 7 }, { productId: 1, quantity: 2 }, { productId: 1, quantity: 1 }]
+
+//lets calculate total quantity of this items array
+let TOTALQUANTITY = 0
+for (let i = 0; i < items.length; i++) {
+    const element = items[i];
+
+    TOTALQUANTITY = TOTALQUANTITY + element.quantity
+
+}
+console.log(TOTALQUANTITY)
