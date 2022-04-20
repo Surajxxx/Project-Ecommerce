@@ -3,6 +3,7 @@
 #Thorium
 
 ## Project - Products Management
+const mimetypes = /image\/png|image\/jpeg|imagesvg\+xml|image\/gif|image\/svg\+xml/;
 jpg|jpeg|png|gif|JPG|JPEG|PNG|GIF
 ### Key points
 - In this project we will work feature wise. That means we pick one object like user, book, blog, etc at a time. We work through it's feature. The steps would be:
@@ -482,3 +483,14 @@ Refer below sample
   updatedAt: "2021-09-17T04:25:07.803Z",
 }
 ```
+
+// for testing please note following steps:
+1. we are handling JSON object in user address that mean you can pass an object like this in formdata in front of address:    { "shipping": { "street": "MG Road", "city": "gwalior",   "pincode": 474012},"billing": {     "street": "MG Road","city": "bharuCH","pincode": 392015  }  }
+
+2. As mentioned above for updating address  you can pass JSON object like this: { "shipping": { "street": "Gandhi marg", "pincode": 392011}}
+
+3.  we are handling JSON array in user address that mean you can pass an array like this in formdata in front of availableSizes : ["M", "L", "XL"]
+
+4. Similarly you can update and filter products by passing sizes in query params and formdata as  : ["M", "L"]
+
+5. 
