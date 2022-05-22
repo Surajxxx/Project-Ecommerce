@@ -35,12 +35,12 @@ const productSchema = new mongoose.Schema({
     productImage: {
         type: String,
         required: [true, "product image is required"],
-    }, // s3 link
+    },
     style: { type: String },
     availableSizes: [
         { type: String, enum: ["S", "XS", "M", "X", "L", "XXL", "XL"] },
     ],
-    installments: { type: Number },
+    installments: { type: Number, required: true },
     deletedAt: { type: Date, default: null },
     isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });

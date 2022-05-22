@@ -4,61 +4,56 @@ const Validator = require('../utilities/validator')
 
 //********************************AUTHENTICATION********************************** */
 
-const authentication = async function(req, res, next){
+const authentication = async function(req, res, next) {
 
     const bearerToken = req.headers["authorization"]
 
-    if(!Validator.isValidInputValue(bearerToken)){
-        return res.status(401).send({status : false, message : "token is missing"})
+    if (!Validator.isValidInputValue(bearerToken)) {
+        return res.status(401).send({ status: false, message: "authentication failed : token not found" })
     }
     const token = bearerToken.split(" ")[1]
-    
 
-    const secretKey = '123451214654132466ASDFGwnweruhkwerbjhiHJKL!@#$%^&'
+    const secretKey = process.env.SECRET_KEY
 
-    if(!token){
-        return res.status(401).send({status : false, message : "authentication failed : token not found"})
-    }
+    try {
+        const decodedToken = jwt.verify(token, secretKey, { ignoreExpiration: true })
 
-    try{
-        const decodedToken = jwt.verify(token, secretKey, {ignoreExpiration: true})
-
-        if(Date.now() > decodedToken.exp * 1000){
-            return res.status(401).send({status : false, message : "authentication failed : Session expired"})
+        if (Date.now() > decodedToken.exp * 1000) {
+            return res.status(401).send({ status: false, message: "authentication failed : Session expired" })
         }
 
         req.decodedToken = decodedToken
 
         next()
 
-    }catch{
-        res.status(401).send({status : false, message : "authentication failed"})
+    } catch {
+        res.status(401).send({ status: false, message: "authentication failed" })
     }
 
 
 }
-//! authorization to be switched to handler
 
-const authorization = async function(req, res, next){
+
+//********************************AUTHORIZATION********************************** */
+
+const authorization = async function(req, res, next) {
     const userId = req.params.userId
     const decodedToken = req.decodedToken
 
-    if(!Validator.isValidObjectId(userId)){
-        return res.status(400).send({status :false , message : " enter a valid userId"})
+    if (!Validator.isValidObjectId(userId)) {
+        return res.status(400).send({ status: false, message: " enter a valid userId" })
     }
 
     const userByUserId = await UserModel.findById(userId)
-  
 
-    if(!userByUserId){
-        return res.status(404).send({status :false , message : " user not found"}) 
+    if (!userByUserId) {
+        return res.status(404).send({ status: false, message: " user not found" })
     }
 
-    if(userId !== decodedToken.userId){
-        return res.status(403).send({status :false , message : "unauthorized access"})  
+    if (userId !== decodedToken.userId) {
+        return res.status(403).send({ status: false, message: "unauthorized access" })
     }
-
     next()
 }
 
-module.exports = {authentication, authorization}
+module.exports = { authentication, authorization }

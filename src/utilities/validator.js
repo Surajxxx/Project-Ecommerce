@@ -39,8 +39,8 @@ const isValidPassword = function(password) {
 
 const isValidNumber = function(value) {
     if (typeof(value) === "undefined" || value === null) return false;
-    if (typeof(value) === "string" && value.trim().length > 0 && Number(value) !== NaN) return true
-    if (typeof(value) === "number") return true;
+    if (typeof(value) === "string" && value.trim().length > 0 && Number(value) !== NaN && Number(value) >= 0) return true
+    if (typeof(value) === "number" && value >= 0) return true;
     return false;
 };
 
